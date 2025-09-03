@@ -1,0 +1,141 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Structure to represent a page in memory
+typedef struct {
+    int page_number;
+    int frequency;
+    int last_used; // For tie-breaking (when frequencies are equal)
+} PageFrame;
+
+// Function to initialize page frames
+void initialize_frames(PageFrame frames[], int n) {
+    for (int i = 0; i < n; i++) {
+        frames[i].page_number = -1; // -1 indicates empty frame
+        frames[i].frequency = 0;
+        frames[i].last_used = -1;
+    }
+}
+
+// Function to display the current state of page frames
+void display_frames(PageFrame frames[], int n, int time) {
+    printf("Time %2d: [", time);
+    for (int i = 0; i < n; i++) {
+        if (frames[i].page_number == -1) {
+            printf(" -");
+        } else {
+            printf("%2d", frames[i].page_number);
+        }
+        if (i < n - 1) printf(" ");
+    }
+    printf("]\n");
+}
+
+// Function to find if a page is already in memory
+int find_page(PageFrame frames[], int n, int page) {
+    for (int i = 0; i < n; i++) {
+        if (frames[i].page_number == page) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+// Function to find the least frequently used page
+int find_lfu_page(PageFrame frames[], int n, int current_time) {
+    int min_freq = __INT_MAX__;
+    int lfu_index = -1;
+    int min_last_used = __INT_MAX__;
+    
+    // First pass: find the minimum frequency
+    for (int i = 0; i < n; i++) {
+        if (frames[i].frequency < min_freq) {
+            min_freq = frames[i].frequency;
+        }
+    }
+    
+    // Second pass: among pages with min frequency, find the one used least recently
+    for (int i = 0; i < n; i++) {
+        if (frames[i].frequency == min_freq && frames[i].last_used < min_last_used) {
+            min_last_used = frames[i].last_used;
+            lfu_index = i;
+        }
+    }
+    
+    return lfu_index;
+}
+
+// LFU page replacement algorithm simulation
+void lfu_page_replacement(int reference_string[], int ref_length, int n_frames) {
+    PageFrame *frames = malloc(n_frames * sizeof(PageFrame));
+    int page_faults = 0;
+    int time = 0;
+    
+    initialize_frames(frames, n_frames);
+    
+    printf("LFU Page Replacement Algorithm Simulation\n");
+    printf("Reference String: ");
+    for (int i = 0; i < ref_length; i++) {
+        printf("%d ", reference_string[i]);
+    }
+    printf("\nNumber of Frames: %d\n\n", n_frames);
+    
+    for (int i = 0; i < ref_length; i++) {
+        int current_page = reference_string[i];
+        int frame_index = find_page(frames, n_frames, current_page);
+        
+        if (frame_index != -1) {
+            // Page hit - update frequency and last used time
+            frames[frame_index].frequency++;
+            frames[frame_index].last_used = i;
+            printf("Page %2d: Hit     ", current_page);
+        } else {
+            // Page fault
+            page_faults++;
+            
+            // Find empty frame first
+            int empty_frame = -1;
+            for (int j = 0; j < n_frames; j++) {
+                if (frames[j].page_number == -1) {
+                    empty_frame = j;
+                    break;
+                }
+            }
+            
+            if (empty_frame != -1) {
+                // There's an empty frame
+                frames[empty_frame].page_number = current_page;
+                frames[empty_frame].frequency = 1;
+                frames[empty_frame].last_used = i;
+                printf("Page %2d: Fault  ", current_page);
+            } else {
+                // Need to replace a page using LFU
+                int lfu_index = find_lfu_page(frames, n_frames, i);
+                printf("Page %2d: Fault (Replace %2d)", current_page, frames[lfu_index].page_number);
+                
+                frames[lfu_index].page_number = current_page;
+                frames[lfu_index].frequency = 1;
+                frames[lfu_index].last_used = i;
+            }
+        }
+        
+        display_frames(frames, n_frames, i + 1);
+    }
+    
+    printf("\nTotal Page Faults: %d\n", page_faults);
+    free(frames);
+}
+
+int main() {
+    int reference_string[] = {3, 4, 5, 4, 3, 4, 7, 2, 4, 5, 6, 7, 2, 4, 6};
+    int ref_length = sizeof(reference_string) / sizeof(reference_string[0]);
+    
+    int n_frames;
+    
+    printf("Enter the number of frames: ");
+    scanf("%d", &n_frames);
+    
+    lfu_page_replacement(reference_string, ref_length, n_frames);
+    
+    return 0;
+}
