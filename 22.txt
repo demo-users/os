@@ -1,0 +1,189 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAX_TRANSACTIONS 100
+#define FILENAME "financial_records.txt"
+
+typedef struct {
+    char date[20];
+    char description[50];
+    float amount;
+    char type; // 'I' for income, 'E' for expense
+} Transaction;
+
+Transaction transactions[MAX_TRANSACTIONS];
+int transaction_count = 0;
+float balance = 0.0;
+
+void clear_input_buffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
+void get_current_date(char *date_str) {
+    time_t t = time(NULL);
+    struct tm *tm_info = localtime(&t);
+    strftime(date_str, 20, "%Y-%m-%d", tm_info);
+}
+
+void add_transaction() {
+    if (transaction_count >= MAX_TRANSACTIONS) {
+        printf("Transaction limit reached!\n");
+        return;
+    }
+
+    Transaction new_trans;
+    
+    get_current_date(new_trans.date);
+    
+    printf("Enter description: ");
+    fgets(new_trans.description, sizeof(new_trans.description), stdin);
+    new_trans.description[strcspn(new_trans.description, "\n")] = '\0'; // Remove newline
+
+    printf("Enter amount: ");
+    scanf("%f", &new_trans.amount);
+    clear_input_buffer();
+
+    printf("Enter type (I for Income, E for Expense): ");
+    scanf("%c", &new_trans.type);
+    clear_input_buffer();
+
+    new_trans.type = toupper(new_trans.type);
+
+    if (new_trans.type == 'I') {
+        balance += new_trans.amount;
+    } else if (new_trans.type == 'E') {
+        balance -= new_trans.amount;
+    } else {
+        printf("Invalid transaction type!\n");
+        return;
+    }
+
+    transactions[transaction_count++] = new_trans;
+    printf("Transaction added successfully!\n");
+}
+
+void display_transactions() {
+    printf("\n=== FINANCIAL TRANSACTIONS ===\n");
+    printf("%-12s %-20s %-10s %-8s\n", "Date", "Description", "Amount", "Type");
+    printf("------------------------------------------------\n");
+
+    for (int i = 0; i < transaction_count; i++) {
+        printf("%-12s %-20s $%-9.2f %-8c\n",
+               transactions[i].date,
+               transactions[i].description,
+               transactions[i].amount,
+               transactions[i].type);
+    }
+    
+    printf("------------------------------------------------\n");
+    printf("Current Balance: $%.2f\n", balance);
+}
+
+void save_to_file() {
+    FILE *file = fopen(FILENAME, "w");
+    if (file == NULL) {
+        printf("Error opening file for writing!\n");
+        return;
+    }
+
+    fprintf(file, "Balance: %.2f\n", balance);
+    fprintf(file, "TransactionCount: %d\n", transaction_count);
+    
+    for (int i = 0; i < transaction_count; i++) {
+        fprintf(file, "%s|%s|%.2f|%c\n",
+                transactions[i].date,
+                transactions[i].description,
+                transactions[i].amount,
+                transactions[i].type);
+    }
+
+    fclose(file);
+    printf("Data saved to %s successfully!\n", FILENAME);
+}
+
+void load_from_file() {
+    FILE *file = fopen(FILENAME, "r");
+    if (file == NULL) {
+        printf("No previous data found. Starting fresh.\n");
+        return;
+    }
+
+    fscanf(file, "Balance: %f\n", &balance);
+    fscanf(file, "TransactionCount: %d\n", &transaction_count);
+
+    for (int i = 0; i < transaction_count; i++) {
+        fscanf(file, "%19[^|]|%49[^|]|%f|%c\n",
+               transactions[i].date,
+               transactions[i].description,
+               &transactions[i].amount,
+               &transactions[i].type);
+    }
+
+    fclose(file);
+    printf("Data loaded from %s successfully!\n", FILENAME);
+}
+
+void display_summary() {
+    float total_income = 0, total_expenses = 0;
+    
+    for (int i = 0; i < transaction_count; i++) {
+        if (transactions[i].type == 'I') {
+            total_income += transactions[i].amount;
+        } else {
+            total_expenses += transactions[i].amount;
+        }
+    }
+
+    printf("\n=== FINANCIAL SUMMARY ===\n");
+    printf("Total Income: $%.2f\n", total_income);
+    printf("Total Expenses: $%.2f\n", total_expenses);
+    printf("Current Balance: $%.2f\n", balance);
+    printf("Net Savings: $%.2f\n", total_income - total_expenses);
+}
+
+int main() {
+    int choice;
+    
+    load_from_file();
+    
+    printf("=== PERSONAL FINANCE REGISTER ===\n");
+
+    while (1) {
+        printf("\nMenu:\n");
+        printf("1. Add Transaction\n");
+        printf("2. View All Transactions\n");
+        printf("3. Show Financial Summary\n");
+        printf("4. Save Data to File\n");
+        printf("5. Exit\n");
+        printf("Enter your choice: ");
+        
+        scanf("%d", &choice);
+        clear_input_buffer();
+
+        switch (choice) {
+            case 1:
+                add_transaction();
+                break;
+            case 2:
+                display_transactions();
+                break;
+            case 3:
+                display_summary();
+                break;
+            case 4:
+                save_to_file();
+                break;
+            case 5:
+                save_to_file();
+                printf("Goodbye! Your data has been saved.\n");
+                exit(0);
+            default:
+                printf("Invalid choice! Please try again.\n");
+        }
+    }
+
+    return 0;
+}
