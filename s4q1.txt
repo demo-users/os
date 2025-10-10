@@ -1,0 +1,72 @@
+#include <stdio.h>
+
+#define MAX 30
+
+int main() {
+    int ref[MAX], frames[MAX], freq[MAX];
+    int n, nf, i, j, k, pos, max, pageFaults = 0, found;
+
+    printf("Enter length of reference string: ");
+    scanf("%d", &n);
+
+    printf("Enter reference string: ");
+    for(i = 0; i < n; i++)
+        scanf("%d", &ref[i]);
+
+    printf("Enter number of frames: ");
+    scanf("%d", &nf);
+
+    for(i = 0; i < nf; i++) {
+        frames[i] = -1;
+        freq[i] = 0;
+    }
+
+    printf("\nPage Scheduling:\n");
+
+    for(i = 0; i < n; i++) {
+        found = 0;
+        for(j = 0; j < nf; j++) {
+            if(frames[j] == ref[i]) {
+                freq[j]++;
+                found = 1;
+                break;
+            }
+        }
+
+        if(!found) {
+            pageFaults++;
+            pos = -1;
+            for(j = 0; j < nf; j++) {
+                if(frames[j] == -1) {
+                    pos = j;
+                    break;
+                }
+            }
+
+            if(pos == -1) {
+                max = freq[0];
+                pos = 0;
+                for(k = 1; k < nf; k++) {
+                    if(freq[k] > max) {
+                        max = freq[k];
+                        pos = k;
+                    }
+                }
+            }
+
+            frames[pos] = ref[i];
+            freq[pos] = 1;
+        }
+
+        for(j = 0; j < nf; j++) {
+            if(frames[j] != -1)
+                printf("%d ", frames[j]);
+            else
+                printf("- ");
+        }
+        printf("\n");
+    }
+
+    printf("\nTotal Page Faults = %d\n", pageFaults);
+    return 0;
+}
