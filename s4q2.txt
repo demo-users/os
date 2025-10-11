@@ -8,7 +8,7 @@
 #define MAX_CMD_LEN 1024
 #define MAX_ARGS 100
 
-// Function to perform search
+
 void search_command(char **args, int arg_count) {
     if (arg_count < 3) {
         fprintf(stderr, "Usage:\n");
@@ -60,7 +60,7 @@ void search_command(char **args, int arg_count) {
             char *pos = line;
             while ((pos = strstr(pos, pattern)) != NULL) {
                 count++;
-                pos += strlen(pattern);  // Move past the last found pattern
+                pos += strlen(pattern);  
             }
         }
 
@@ -79,18 +79,18 @@ int main() {
         printf("myshell$ ");
         fflush(stdout);
 
-        // Read input
+        
         if (!fgets(input, sizeof(input), stdin)) {
-            break;  // EOF or error
+            break;  
         }
 
-        // Remove trailing newline
+      
         input[strcspn(input, "\n")] = 0;
 
-        // Skip empty input
+        
         if (strlen(input) == 0) continue;
 
-        // Tokenize input
+       
         int arg_count = 0;
         char *token = strtok(input, " ");
         while (token != NULL && arg_count < MAX_ARGS - 1) {
@@ -108,7 +108,7 @@ int main() {
             continue;
         }
 
-        // External command
+        
         pid_t pid = fork();
         if (pid < 0) {
             perror("Fork failed");
@@ -117,7 +117,7 @@ int main() {
             perror("Execution failed");
             exit(EXIT_FAILURE);
         } else {
-            wait(NULL);  // Wait for child
+            wait(NULL);  
         }
     }
 
