@@ -1,0 +1,78 @@
+#include <stdio.h>
+
+struct Process {
+    int pid;
+    int at;
+    int bt;
+    int priority;
+    int ct;
+    int tat;
+    int wt;
+    int completed;
+};
+
+int main() {
+    int n, completed = 0, time = 0, idx;
+    float total_tat = 0, total_wt = 0;
+
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+
+    struct Process p[n];
+
+    for (int i = 0; i < n; i++) {
+        p[i].pid = i + 1;
+        printf("Enter arrival time for P%d: ", i + 1);
+        scanf("%d", &p[i].at);
+        printf("Enter burst time for P%d: ", i + 1);
+        scanf("%d", &p[i].bt);
+        printf("Enter priority for P%d (lower number = higher priority): ", i + 1);
+        scanf("%d", &p[i].priority);
+        p[i].completed = 0;
+    }
+
+    printf("\nGantt Chart:\n");
+
+    while (completed < n) {
+        int highest_priority = 99999;
+        idx = -1;
+
+        for (int i = 0; i < n; i++) {
+            if (p[i].at <= time && p[i].completed == 0) {
+                if (p[i].priority < highest_priority) {
+                    highest_priority = p[i].priority;
+                    idx = i;
+                } else if (p[i].priority == highest_priority) {
+                    if (p[i].at < p[idx].at)
+                        idx = i;
+                }
+            }
+        }
+
+        if (idx != -1) {
+            printf("| P%d ", p[idx].pid);
+            time += p[idx].bt;
+            p[idx].ct = time;
+            p[idx].tat = p[idx].ct - p[idx].at;
+            p[idx].wt = p[idx].tat - p[idx].bt;
+            p[idx].completed = 1;
+            total_tat += p[idx].tat;
+            total_wt += p[idx].wt;
+            completed++;
+        } else {
+            time++;
+        }
+    }
+    printf("|\n");
+
+    printf("\nProcess\tAT\tBT\tPriority\tCT\tTAT\tWT\n");
+    for (int i = 0; i < n; i++) {
+        printf("P%d\t%d\t%d\t%d\t\t%d\t%d\t%d\n", p[i].pid, p[i].at, p[i].bt, p[i].priority, p[i].ct, p[i].tat, p[i].wt);
+    }
+
+    printf("\nAverage Turnaround Time: %.2f", total_tat / n);
+    printf("\nAverage Waiting Time: %.2f\n", total_wt / n);
+
+    return 0;
+}
+
