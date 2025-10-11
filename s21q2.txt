@@ -1,0 +1,108 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
+#include <time.h>
+
+struct Process {
+    int pid;
+    int at;
+    int bt1;
+    int io_time;
+    int bt2;
+    int priority;
+    int remaining_time;
+    int ct;
+    int tat;
+    int wt;
+    int started;
+    int phase; // 1: first burst, 2: IO, 3: second burst
+};
+
+int allDone(struct Process p[], int n) {
+    for (int i = 0; i < n; i++) {
+        if (p[i].remaining_time > 0)
+            return 0;
+    }
+    return 1;
+}
+
+int main() {
+    int n;
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+
+    struct Process p[n];
+
+    srand(time(NULL));
+
+    for (int i = 0; i < n; i++) {
+        p[i].pid = i + 1;
+        printf("Enter arrival time for P%d: ", i + 1);
+        scanf("%d", &p[i].at);
+        printf("Enter first CPU burst for P%d: ", i + 1);
+        scanf("%d", &p[i].bt1);
+        printf("Enter priority for P%d (lower = higher priority): ", i + 1);
+        scanf("%d", &p[i].priority);
+        p[i].io_time = 2;
+        p[i].bt2 = rand() % 10 + 1;
+        p[i].remaining_time = p[i].bt1;
+        p[i].started = 0;
+        p[i].phase = 1;
+    }
+
+    int time = 0;
+    int completed = 0;
+    printf("\nGantt Chart:\n");
+
+    while (!allDone(p, n)) {
+        int idx = -1;
+        int min_priority = INT_MAX;
+
+        for (int i = 0; i < n; i++) {
+            if (p[i].at <= time && p[i].remaining_time > 0 && p[i].priority < min_priority) {
+                min_priority = p[i].priority;
+                idx = i;
+            }
+        }
+
+        if (idx != -1) {
+            printf("| P%d ", p[idx].pid);
+            p[idx].remaining_time--;
+            time++;
+
+            if (p[idx].remaining_time == 0) {
+                if (p[idx].phase == 1) {
+                    p[idx].at = time + p[idx].io_time;
+                    p[idx].remaining_time = p[idx].bt2;
+                    p[idx].phase = 2;
+                } else {
+                    p[idx].ct = time;
+                }
+            }
+        } else {
+            printf("| IDLE ");
+            time++;
+        }
+    }
+
+    printf("|\n");
+
+    float total_tat = 0, total_wt = 0;
+    printf("\nProcess\tAT\tBT1\tBT2\tCT\tTAT\tWT\tPriority\n");
+
+    for (int i = 0; i < n; i++) {
+        int total_bt = p[i].bt1 + p[i].bt2;
+        p[i].tat = p[i].ct - p[i].at + p[i].io_time;
+        p[i].wt = p[i].tat - total_bt;
+        total_tat += p[i].tat;
+        total_wt += p[i].wt;
+
+        printf("P%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p[i].pid, p[i].at - p[i].io_time, p[i].bt1, p[i].bt2, p[i].ct, p[i].tat, p[i].wt, p[i].priority);
+    }
+
+    printf("\nAverage Turnaround Time: %.2f", total_tat / n);
+    printf("\nAverage Waiting Time: %.2f\n", total_wt / n);
+
+    return 0;
+}
+
