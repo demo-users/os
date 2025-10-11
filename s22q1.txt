@@ -1,0 +1,37 @@
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/resource.h>
+
+int main() {
+    pid_t pid;
+
+    pid = fork();
+
+    if (pid < 0) {
+        perror("Fork failed");
+        return 1;
+    }
+
+    if (pid == 0) {
+        // Child process
+        printf("Child process started. PID = %d\n", getpid());
+
+        int ret = nice(-5);  // Try to increase priority
+        if (ret == -1) {
+            perror("nice");
+        }
+
+        printf("Child's nice value: %d\n", getpriority(PRIO_PROCESS, 0));
+
+    } else {
+        // Parent process
+        wait(NULL);
+        printf("Parent process. PID = %d\n", getpid());
+        printf("Parent's nice value: %d\n", getpriority(PRIO_PROCESS, 0));
+    }
+
+    return 0;
+}
+
