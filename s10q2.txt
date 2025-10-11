@@ -1,0 +1,79 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <dirent.h>
+#include <sys/stat.h>
+
+#define MAX 100
+
+void list_command(char *mode, char *dirname) {
+    DIR *dir;
+    struct dirent *entry;
+
+    dir = opendir(dirname);
+    if (dir == NULL) {
+        perror("Unable to open directory");
+        return;
+    }
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_REG) {
+            if (strcmp(mode, "f") == 0) {
+                printf("%s\n", entry->d_name);
+            } else if (strcmp(mode, "i") == 0) {
+                printf("%s\t(inode: %lu)\n", entry->d_name, entry->d_ino);
+            }
+        }
+    }
+
+    closedir(dir);
+}
+
+int main() {
+    char input[MAX];
+    char *args[10];
+
+    while (1) {
+        printf("myshell$ ");
+        fflush(stdout);
+
+        if (fgets(input, sizeof(input), stdin) == NULL) break;
+
+        input[strcspn(input, "\n")] = 0;
+
+        int i = 0;
+        char *token = strtok(input, " ");
+        while (token != NULL && i < 10) {
+            args[i++] = token;
+            token = strtok(NULL, " ");
+        }
+        args[i] = NULL;
+
+        if (args[0] == NULL) continue;
+
+        if (strcmp(args[0], "exit") == 0) break;
+
+        if (strcmp(args[0], "list") == 0) {
+            if (i == 3) {
+                list_command(args[1], args[2]);
+            } else {
+                printf("Usage: list [f|i] dirname\n");
+            }
+            continue;
+        }
+
+        pid_t pid = fork();
+        if (pid == 0) {
+            execvp(args[0], args);
+            perror("Command failed");
+            exit(1);
+        } else {
+            wait(NULL);
+        }
+    }
+
+    return 0;
+}
+
