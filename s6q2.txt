@@ -1,0 +1,101 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#define MAX_CMD_LEN 1024
+#define MAX_ARGS 100
+
+void search_command(char **args, int arg_count) {
+    if (arg_count < 4) {
+        fprintf(stderr, "Usage:\n");
+        fprintf(stderr, "  search f filename pattern\n");
+        fprintf(stderr, "  search a filename pattern\n");
+        return;
+    }
+
+    char *mode = args[1];
+    char *filename = args[2];
+    char *pattern = args[3];
+
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        perror("File open failed");
+        return;
+    }
+
+    char line[1024];
+    int line_number = 1;
+    int found = 0;
+
+    while (fgets(line, sizeof(line), file)) {
+        if (strstr(line, pattern)) {
+            if (strcmp(mode, "f") == 0) {
+                printf("First occurrence at line %d: %s", line_number, line);
+                found = 1;
+                break;
+            } else if (strcmp(mode, "a") == 0) {
+                printf("Line %d: %s", line_number, line);
+                found = 1;
+            }
+        }
+        line_number++;
+    }
+
+    if (!found) {
+        printf("Pattern not found in file.\n");
+    }
+
+    fclose(file);
+}
+
+int main() {
+    char input[MAX_CMD_LEN];
+    char *args[MAX_ARGS];
+
+    while (1) {
+        printf("myshell$ ");
+        fflush(stdout);
+
+        if (!fgets(input, sizeof(input), stdin)) {
+            break;
+        }
+
+        input[strcspn(input, "\n")] = 0;
+
+        if (strlen(input) == 0) continue;
+
+        int arg_count = 0;
+        char *token = strtok(input, " ");
+        while (token != NULL && arg_count < MAX_ARGS - 1) {
+            args[arg_count++] = token;
+            token = strtok(NULL, " ");
+        }
+        args[arg_count] = NULL;
+
+        if (strcmp(args[0], "exit") == 0) {
+            break;
+        }
+
+        if (strcmp(args[0], "search") == 0) {
+            search_command(args, arg_count);
+            continue;
+        }
+
+        pid_t pid = fork();
+        if (pid < 0) {
+            perror("Fork failed");
+        } else if (pid == 0) {
+            execvp(args[0], args);
+            perror("Command execution failed");
+            exit(EXIT_FAILURE);
+        } else {
+            wait(NULL);
+        }
+    }
+
+    return 0;
+}
+
