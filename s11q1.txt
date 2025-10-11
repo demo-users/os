@@ -1,0 +1,79 @@
+#include <stdio.h>
+
+#define MAX 30
+
+int main() {
+    int frames[MAX], freq[MAX], ref[MAX];
+    int n, nf, i, j, k, pos, min, pageFaults = 0;
+
+    printf("Enter length of reference string: ");
+    scanf("%d", &n);
+
+    printf("Enter reference string: ");
+    for(i = 0; i < n; i++)
+        scanf("%d", &ref[i]);
+
+    printf("Enter number of frames: ");
+    scanf("%d", &nf);
+
+    for(i = 0; i < nf; i++) {
+        frames[i] = -1;
+        freq[i] = 0;
+    }
+
+    printf("\nPage Replacement Process (LFU):\n");
+
+    for(i = 0; i < n; i++) {
+        int page = ref[i];
+        int found = 0;
+
+        // check if page already in memory
+        for(j = 0; j < nf; j++) {
+            if(frames[j] == page) {
+                freq[j]++;
+                found = 1;
+                break;
+            }
+        }
+
+        if(!found) {
+            pos = -1;
+            for(j = 0; j < nf; j++) {
+                if(frames[j] == -1) {
+                    pos = j;
+                    break;
+                }
+            }
+
+            if(pos != -1) {
+                frames[pos] = page;
+                freq[pos] = 1;
+                pageFaults++;
+            } else {
+                min = freq[0];
+                pos = 0;
+                for(k = 1; k < nf; k++) {
+                    if(freq[k] < min) {
+                        min = freq[k];
+                        pos = k;
+                    }
+                }
+                frames[pos] = page;
+                freq[pos] = 1;
+                pageFaults++;
+            }
+        }
+
+        printf("Step %2d: ", i + 1);
+        for(k = 0; k < nf; k++) {
+            if(frames[k] != -1)
+                printf("%d ", frames[k]);
+            else
+                printf("- ");
+        }
+        printf("\n");
+    }
+
+    printf("\nTotal Page Faults = %d\n", pageFaults);
+    return 0;
+}
