@@ -1,0 +1,85 @@
+#include <stdio.h>
+#define MAX 30
+
+int main() {
+    int n, nf, i, j, pageFaults = 0, time = 0;
+    int ref[MAX], frames[MAX], counter[MAX];
+
+    // Input number of pages
+    printf("Enter number of pages in reference string: ");
+    scanf("%d", &n);
+
+    // Input reference string
+    printf("Enter reference string: ");
+    for(i = 0; i < n; i++)
+        scanf("%d", &ref[i]);
+
+    // Input number of frames
+    printf("Enter number of frames: ");
+    scanf("%d", &nf);
+
+    // Initialize frames and counters
+    for(i = 0; i < nf; i++) {
+        frames[i] = -1;   // empty frame
+        counter[i] = 0;
+    }
+
+    // Print table header
+    printf("\nPage\tFrames\n");
+
+    // Process each page
+    for(i = 0; i < n; i++) {
+        int found = 0;
+        time++;
+
+        // Check if page is already in memory
+        for(j = 0; j < nf; j++) {
+            if(frames[j] == ref[i]) {
+                found = 1;
+                counter[j] = time;  // update last used time
+                break;
+            }
+        }
+
+        if(!found) {
+            pageFaults++;
+
+            // Check for empty frame
+            int empty = -1;
+            for(j = 0; j < nf; j++) {
+                if(frames[j] == -1) {
+                    empty = j;
+                    break;
+                }
+            }
+
+            if(empty != -1) {
+                frames[empty] = ref[i];
+                counter[empty] = time;
+            } else {
+                // Replace LRU page
+                int lru = 0;
+                for(j = 1; j < nf; j++)
+                    if(counter[j] < counter[lru])
+                        lru = j;
+                frames[lru] = ref[i];
+                counter[lru] = time;
+            }
+        }
+
+        // Print current frame status (empty = '-')
+        printf("%d\t", ref[i]);
+        for(j = 0; j < nf; j++) {
+            if(frames[j] != -1)
+                printf("%d ", frames[j]);
+            else
+                printf("- ");
+        }
+        printf("\n");
+    }
+
+    // Print total page faults
+    printf("\nTotal Page Faults: %d\n", pageFaults);
+
+    return 0;
+}
